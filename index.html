@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emergency Savings Runway Months Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-4">
+  <div class="max-w-2xl mx-auto">
+    <header class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-800">Emergency Savings Runway Planner</h1>
+      <p class="text-gray-500 text-sm mt-1">Know how long your savings will last and how to reach your target</p>
+    </header>
+
+    <section class="bg-white rounded-xl shadow p-5 mb-5" aria-label="Financial inputs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="expenses" class="block text-sm font-medium text-gray-700 mb-1">Monthly Expenses ($)</label>
+          <input id="expenses" type="number" min="0" value="3000" step="100"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            aria-label="Monthly expenses in dollars" oninput="calculate()" />
+        </div>
+        <div>
+          <label for="savings" class="block text-sm font-medium text-gray-700 mb-1">Current Savings ($)</label>
+          <input id="savings" type="number" min="0" value="8000" step="500"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            aria-label="Current savings in dollars" oninput="calculate()" />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="monthly-save" class="block text-sm font-medium text-gray-700 mb-1">Monthly Savings Rate ($)</label>
+          <input id="monthly-save" type="number" min="0" value="500" step="50"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            aria-label="Monthly savings amount in dollars" oninput="calculate()" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Target Fund</label>
+          <div class="flex gap-2" role="radiogroup" aria-label="Emergency fund target months">
+            <button class="target-btn flex-1 py-2 rounded-lg border text-sm font-medium transition" data-months="3" onclick="setTarget(3)">3 mo</button>
+            <button class="target-btn flex-1 py-2 rounded-lg border text-sm font-medium transition" data-months="6" onclick="setTarget(6)">6 mo</button>
+            <button class="target-btn flex-1 py-2 rounded-lg border text-sm font-medium transition" data-months="9" onclick="setTarget(9)">9 mo</button>
+            <button class="target-btn flex-1 py-2 rounded-lg border text-sm font-medium transition" data-months="12" onclick="setTarget(12)">12 mo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-live="polite" aria-label="Savings results">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div class="bg-white rounded-xl shadow p-4 text-center">
+          <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Current Runway</div>
+          <div id="runway-val" class="text-3xl font-bold text-emerald-600"></div>
+          <div class="text-xs text-gray-400 mt-1">months</div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 text-center">
+          <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Target Amount</div>
+          <div id="target-val" class="text-3xl font-bold text-blue-600"></div>
+          <div class="text-xs text-gray-400 mt-1">dollars</div>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 text-center">
+          <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Gap to Target</div>
+          <div id="gap-val" class="text-3xl font-bold text-orange-500"></div>
+          <div class="text-xs text-gray-400 mt-1">dollars needed</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow p-5">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="text-sm font-semibold text-gray-700">Progress to Target</h2>
+          <span id="pct-label" class="text-sm font-bold text-emerald-600"></span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-5 overflow-hidden mb-4" role="progressbar" aria-label="Progress to emergency fund target">
+          <div id="progress-bar" class="h-5 rounded-full transition-all duration-300 bg-emerald-500"></div>
+        </div>
+        <div id="weeks-to-target" class="text-center text-sm text-gray-600 bg-blue-50 rounded-lg py-3 px-4"></div>
+        <div id="status-msg" class="text-center text-sm mt-3 font-medium py-2 rounded-lg"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let targetMonths = 6;
+
+    function setTarget(m) {
+      targetMonths = m;
+      document.querySelectorAll(".target-btn").forEach(btn => {
+        const active = parseInt(btn.dataset.months) === m;
+        btn.className = `target-btn flex-1 py-2 rounded-lg border text-sm font-medium transition ${active ? "bg-emerald-600 text-white border-emerald-600" : "border-gray-300 text-gray-500 hover:bg-emerald-50"}`;
+        btn.setAttribute("aria-pressed", active);
+      });
+      calculate();
+    }
+
+    function fmt(n) {
+      return "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    }
+
+    function calculate() {
+      const expenses = parseFloat(document.getElementById("expenses").value) || 0;
+      const savings  = parseFloat(document.getElementById("savings").value) || 0;
+      const rate     = parseFloat(document.getElementById("monthly-save").value) || 0;
+
+      const runway = expenses > 0 ? (savings / expenses) : 0;
+      const target = expenses * targetMonths;
+      const gap    = Math.max(0, target - savings);
+      const pct    = target > 0 ? Math.min(100, Math.round((savings / target) * 100)) : 100;
+
+      document.getElementById("runway-val").textContent = runway.toFixed(1);
+      document.getElementById("target-val").textContent = fmt(target);
+      document.getElementById("gap-val").textContent = gap > 0 ? fmt(gap) : "✓ Met";
+      document.getElementById("pct-label").textContent = pct + "%";
+      document.getElementById("progress-bar").style.width = pct + "%";
+
+      const weeksEl = document.getElementById("weeks-to-target");
+      if (gap <= 0) {
+        weeksEl.innerHTML = `<span class="text-green-700 font-semibold">Target already reached!</span>`;
+      } else if (rate <= 0) {
+        weeksEl.innerHTML = `<span class="text-gray-500">Enter a monthly savings rate to see time to target</span>`;
+      } else {
+        const monthsLeft = gap / rate;
+        const weeksLeft  = monthsLeft * 4.33;
+        weeksEl.innerHTML = `At ${fmt(rate)}/month → <strong>${weeksLeft.toFixed(0)} weeks</strong> (${monthsLeft.toFixed(1)} months) to reach <strong>${targetMonths}-month</strong> target`;
+      }
+
+      const statusEl = document.getElementById("status-msg");
+      if (runway >= targetMonths) {
+        statusEl.textContent = "✅ You're fully funded for your target!";
+        statusEl.className = "text-center text-sm mt-3 font-medium py-2 rounded-lg bg-green-50 text-green-700";
+      } else if (runway >= 3) {
+        statusEl.textContent = "🟡 You have a basic cushion — keep building";
+        statusEl.className = "text-center text-sm mt-3 font-medium py-2 rounded-lg bg-yellow-50 text-yellow-700";
+      } else {
+        statusEl.textContent = "🔴 Under 3 months runway — prioritize savings";
+        statusEl.className = "text-center text-sm mt-3 font-medium py-2 rounded-lg bg-red-50 text-red-700";
+      }
+    }
+
+    setTarget(6);
+  </script>
+</body>
+</html>
